@@ -2,6 +2,7 @@ use std::collections::HashSet;
 
 type Coord =  (i16, i16);
 
+#[derive(Clone, Copy)]
 pub enum Player {
     Plr1,
     Plr2,
@@ -30,6 +31,34 @@ impl State {
             false => self.player_two.insert(tile)
         };
 
+        let plrmap = match self.is_player_one_turn {
+            true => &self.player_one,
+            false => &self.player_two,
+        };
+
+        for (x,y) in UNITS_POS {
+            let mut count: i32 = -1;
+            let mut temp_coord = tile;
+            while plrmap.contains(&temp_coord) {
+                count += 1;
+                temp_coord.0 += x;
+                temp_coord.1 += y;
+            }
+            temp_coord = tile;
+            while plrmap.contains(&temp_coord) {
+                count += 1;
+                temp_coord.0 -= x;
+                temp_coord.1 -= y;
+            }
+
+            if count >= 6 {
+                match self.is_player_one_turn {
+                    true => self.win_status = Some(Player::Plr1),
+                    false => self.win_status = Some(Player::Plr2)
+                }
+            }
+        }
+
         self.is_player_one_turn = self.is_player_one_turn ^ !self.has_additional_turn;
         self.has_additional_turn = !self.has_additional_turn;
 
@@ -42,5 +71,9 @@ impl State {
             return Some(());
         }
         return None;
+    }
+
+    pub fn get_winner(&self) -> Option<Player> {
+        return self.win_status;
     }
 }
