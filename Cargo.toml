@@ -1,0 +1,10 @@
+[package]
+name = "scarlet-hex"
+version = "0.1.0"
+edition = "2024"
+
+[[bin]]
+name = "play"
+path = "src/play.rs"
+
+[dependencies]
