@@ -77,3 +77,15 @@ impl State {
         return self.win_status;
     }
 }
+
+impl Default for State {
+    fn default() -> Self {
+        Self {
+            player_one: HashSet::new(),
+            player_two: HashSet::new(),
+            is_player_one_turn: true,
+            has_additional_turn: false,
+            win_status: None
+        }
+    }
+}
