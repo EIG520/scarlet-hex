@@ -8,3 +8,4 @@ name = "play"
 path = "src/play.rs"
 
 [dependencies]
+itertools = "0.14.0"

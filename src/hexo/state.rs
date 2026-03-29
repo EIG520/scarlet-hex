@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-type Coord =  (i16, i16);
+pub type Coord =  (i16, i16);
 
 #[derive(Clone, Copy)]
 pub enum Player {
@@ -18,6 +18,7 @@ pub struct State {
     has_additional_turn: bool,
 
     win_status: Option<Player>,
+    evaluation: i32
 }
 
 impl State {
@@ -35,8 +36,13 @@ impl State {
             true => &self.player_one,
             false => &self.player_two,
         };
+        let nplrmap = match self.is_player_one_turn {
+            false => &self.player_one,
+            true => &self.player_two,
+        }; 
 
         for (x,y) in UNITS_POS {
+            // Check for winning
             let mut count: i32 = -1;
             let mut temp_coord = tile;
             while plrmap.contains(&temp_coord) {
@@ -57,12 +63,86 @@ impl State {
                     false => self.win_status = Some(Player::Plr2)
                 }
             }
+            // my EVIL, rEVULsive EVAL is on another lEVEL as it EVOLves differently based on the order moves are played
+            // Update position evaluation
+            if self.winnable(nplrmap, tile, x, y) {
+                match self.is_player_one_turn {
+                    true => self.evaluation += 2,
+                    false => self.evaluation -= 2
+                }
+            }
+            match self.is_player_one_turn {
+                true => self.evaluation += self.blocks(tile, x, y),
+                false => self.evaluation -= self.blocks(tile, x, y)                
+            }
         }
 
         self.is_player_one_turn = self.is_player_one_turn ^ !self.has_additional_turn;
         self.has_additional_turn = !self.has_additional_turn;
+    }
 
+    pub fn winnable(&self, nplrmap:&HashSet<Coord>, tile: Coord, x: i16, y: i16) -> bool {
+        let mut count: i32 = -1;
+        let mut temp_coord = tile;
+        while !nplrmap.contains(&temp_coord) && count < 6 {
+            count += 1;
+            temp_coord.0 += x;
+            temp_coord.1 += y;
+        }
+        temp_coord = tile;
+        while !nplrmap.contains(&temp_coord) && count < 6 {
+            count += 1;
+            temp_coord.0 -= x;
+            temp_coord.1 -= y;
+        }
 
+        return count >= 6;
+    }
+
+    pub fn blocks(&self, tile: Coord, x: i16, y: i16) -> i32 {
+        let plrmap = match self.is_player_one_turn {
+            true => &self.player_one,
+            false => &self.player_two,
+        };
+        let nplrmap = match self.is_player_one_turn {
+            false => &self.player_one,
+            true => &self.player_two,
+        }; 
+
+        let mut blkcnt = 0;
+
+        let mut count: i32 = -1;
+        let mut temp_coord = tile;
+        while !nplrmap.contains(&temp_coord) && count < 3 {
+            count += 1;
+            temp_coord.0 += x;
+            temp_coord.1 += y;
+        }
+
+        if nplrmap.contains(&temp_coord) {
+            if self.winnable(plrmap, tile, x, y) {
+                blkcnt += 1;
+            }
+        }
+
+        temp_coord = tile;
+        while !nplrmap.contains(&temp_coord) && count < 3 {
+            count += 1;
+            temp_coord.0 -= x;
+            temp_coord.1 -= y;
+        }
+        if nplrmap.contains(&temp_coord) {
+            if self.winnable(plrmap, tile, x, y) {
+                blkcnt += 1;
+            }
+        }
+
+        return blkcnt;
+    }
+
+    pub fn unplay(&mut self, tile: Coord) {
+        self.player_one.remove(&tile);
+        self.player_two.remove(&tile);
     }
 
     pub fn play(&mut self, tile: Coord) -> Option<()> {
@@ -85,7 +165,8 @@ impl Default for State {
             player_two: HashSet::new(),
             is_player_one_turn: true,
             has_additional_turn: false,
-            win_status: None
+            win_status: None,
+            evaluation: 0,
         }
     }
 }
