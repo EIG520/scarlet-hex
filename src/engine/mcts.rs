@@ -18,23 +18,28 @@ pub struct Searcher {
 
 impl Searcher {
     pub fn grow_once(&mut self) {
+
         let nlen = self.nodes.len();
         let mut path = vec![0];
         let mut node = self.nodes[0].borrow_mut();
         self.state.play(node.tile);
 
         while !node.children.is_none() {
-            // select child (always first one until I write actual code)
+            // Select child
             let idx = self.select_puct(&node);
             node = self.nodes[idx].borrow_mut();
             self.state.play(node.tile);
             path.push(idx);
         }
+
+
         let mut eval = 0.0;
         let mut i = 0;
         let mut newnodes = vec![];
-        let tile = node.tile;
 
+        // if node.tile == (-1,0) {
+        //     println!("{:?} {:?}", self.state.get_winner(), path);
+        // }
 
         match self.state.get_winner() {
             None => {
@@ -47,16 +52,17 @@ impl Searcher {
                     self.state.unplay();
                     i+=1;
                 }
+                node.children = Some((nlen,nlen+i));
             },
             Some(Player::Plr1) => {
+                // println!("Plr1 win found {path:?}");
                 eval = 2.0;
             },
             Some(Player::Plr2) => {
+                // println!("Plr2 win found {path:?}");
                 eval = -2.0;
             }
         }
-
-        node.children = Some((nlen,nlen+i));
 
         drop(node);
 
@@ -64,7 +70,7 @@ impl Searcher {
         for p in path.iter().rev() {
             let mut node= self.nodes[*p].borrow_mut();
             node.visits += 1;
-            node.score += eval / i as f32;
+            node.score += eval / (i + 1) as f32;
             self.state.unplay();
         }
 
@@ -79,8 +85,11 @@ impl Searcher {
         for idx in node.children.unwrap().0..node.children.unwrap().1 {
             let child = self.nodes[idx].borrow();
             let wr = child.score / child.visits as f32 / 2.0 * if self.state.is_player_one_turn { 1.0 } else { -1.0 };
+            let e = (node.visits as f32 * 2.0).sqrt();
+            let p = 1.0 / (node.children.unwrap().1 - node.children.unwrap().0) as f32;
 
-            let uct = wr + (2.0 * (node.visits as f32).ln() / child.visits as f32).sqrt();
+
+            let uct = wr + e * p / (1.0 + child.visits as f32);
             
             if uct > best_uct {
                 best_uct = uct;
@@ -108,6 +117,7 @@ impl Searcher {
             }
 
         }
+        self.state.unplay();
 
         best_coord
     }
@@ -136,8 +146,8 @@ impl Searcher {
     pub fn print(&self) {
         for (i, node) in self.nodes.iter().clone().enumerate().take(100000) {
             let nd = node.borrow();
-            if let Some(t) = nd.children {
-                println!("{i}: Move: {:?} Visits: {} Score: {} Children: {t:?}", nd.tile, nd.visits, nd.score);
+            if nd.visits > 1 {
+                println!("{i}: Move: {:?} Visits: {} Score: {} ({}) Children: {:?}", nd.tile, nd.visits, nd.score, nd.score/nd.visits as f32, nd.children);
             }
         }
     }

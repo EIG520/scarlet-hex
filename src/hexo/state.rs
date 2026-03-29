@@ -4,7 +4,7 @@ use itertools::Itertools;
 
 pub type Coord =  (i16, i16);
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 pub enum Player {
     Plr1,
     Plr2,
@@ -74,17 +74,15 @@ impl State {
 
             if count >= 6 {
                 match self.is_player_one_turn {
-                    true => self.win_status = Some(Player::Plr1),
-                    false => self.win_status = Some(Player::Plr2)
+                    true => {self.win_status = Some(Player::Plr1); eval = 9999},
+                    false => {self.win_status = Some(Player::Plr2); eval = 9999}
                 }
             }
             // my EVIL, rEVULsive EVAL is on another lEVEL as it EVOLves differently based on the order moves are played
             // Update position evaluation
-            if self.winnable(nplrmap, plrmap, tile, x, y) {
-                match self.is_player_one_turn {
-                    true => eval += 2,
-                    false => eval -= 2
-                }
+            match self.is_player_one_turn {
+                true => eval += self.winnablecnt(nplrmap, plrmap, tile, x, y),
+                false => eval -= self.winnablecnt(nplrmap, plrmap, tile, x, y)
             }
         }
 
@@ -116,6 +114,29 @@ impl State {
         return count >= 6 && ncount > 0;
     }
 
+    pub fn winnablecnt(&self, nplrmap:&HashSet<Coord>, plrmap:&HashSet<Coord>,tile: Coord, x: i16, y: i16) -> i32 {
+        let mut count: i32 = -1;
+        let mut ncount: i32 = -2;
+        let mut temp_coord = tile;
+        while !nplrmap.contains(&temp_coord) && count < 6 {
+            if plrmap.contains(&temp_coord) { ncount += 1; }
+            count += 1;
+            temp_coord.0 += x;
+            temp_coord.1 += y;
+        }
+        temp_coord = tile;
+        while !nplrmap.contains(&temp_coord) && count < 12 {
+            if plrmap.contains(&temp_coord) { ncount += 1; }
+            count += 1;
+            temp_coord.0 -= x;
+            temp_coord.1 -= y;
+        }
+
+        if count >= 6 {
+            return ncount;
+        }
+        return 0;
+    }
     pub fn blocks(&self, tile: Coord, x: i16, y: i16) -> i32 {
         let plrmap = match self.is_player_one_turn {
             true => &self.player_one,
@@ -137,9 +158,7 @@ impl State {
         }
 
         if nplrmap.contains(&temp_coord) {
-            if self.winnable(plrmap, nplrmap, temp_coord, x, y) {
-                blkcnt += 1;
-            }
+            blkcnt += self.winnablecnt(plrmap, nplrmap, temp_coord, x, y);
         }
 
         temp_coord = tile;
@@ -149,17 +168,15 @@ impl State {
             temp_coord.1 -= y;
         }
         if nplrmap.contains(&temp_coord) {
-            if self.winnable(plrmap, nplrmap, temp_coord, x, y) {
-                blkcnt += 1;
-            }
+            blkcnt += self.winnablecnt(plrmap, nplrmap, temp_coord, x, y);
         }
 
         return blkcnt;
     }
 
     pub fn unplay(&mut self) {
-        let tile = self.turns.pop().unwrap();
 
+        let tile = self.turns.pop().unwrap();
         self.player_one.remove(&tile);
         self.player_two.remove(&tile);
         self.evaluations.pop();
@@ -175,8 +192,11 @@ impl State {
     }
 
     pub fn play(&mut self, tile: Coord) -> Option<()> {
+        // println!("play {tile:?} --- {:?}", self.turns);
         if self.is_open(tile) {
             self.play_unchecked(tile);
+                // println!("winstat {:?}", self.get_winner());
+
             return Some(());
         }
         return None;
@@ -189,7 +209,7 @@ impl State {
     pub fn get_focused_tiles(&self) -> Vec<Coord> {
         let mut tiles = HashSet::<Coord>::new();
         for tile in if self.turns.len() >= 5 {&self.turns[self.turns.len()-5..]} else {&self.turns} {
-            for (x,y) in (-3..=3).cartesian_product(-3..=3) {
+            for (x,y) in (-2..=2).cartesian_product(-2..=2) {
                 if self.is_open((tile.0 + x, tile.1 + y)) {
                     tiles.insert((tile.0 + x, tile.1 + y));
                 }
