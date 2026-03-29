@@ -20,7 +20,7 @@ impl Searcher {
         let mut node = self.nodes[0].get_mut();
 
         while !node.children.is_empty() {
-            // select child (always first one in this case)
+            // select child (always first one until I write actual code)
             let idx = node.children[0];
             node = self.nodes[idx].get_mut();
             path.push(0usize);
