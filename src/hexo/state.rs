@@ -18,7 +18,7 @@ pub struct State {
     has_additional_turn: bool,
 
     win_status: Option<Player>,
-    evaluation: i32
+    evaluations: Vec<i32>
 }
 
 impl State {
@@ -40,6 +40,8 @@ impl State {
             false => &self.player_one,
             true => &self.player_two,
         }; 
+
+        let mut eval = *self.evaluations.last().unwrap();
 
         for (x,y) in UNITS_POS {
             // Check for winning
@@ -67,15 +69,17 @@ impl State {
             // Update position evaluation
             if self.winnable(nplrmap, tile, x, y) {
                 match self.is_player_one_turn {
-                    true => self.evaluation += 2,
-                    false => self.evaluation -= 2
+                    true => eval += 2,
+                    false => eval -= 2
                 }
             }
             match self.is_player_one_turn {
-                true => self.evaluation += self.blocks(tile, x, y),
-                false => self.evaluation -= self.blocks(tile, x, y)                
+                true => eval += self.blocks(tile, x, y),
+                false => eval -= self.blocks(tile, x, y)                
             }
         }
+
+        self.evaluations.push(eval);
 
         self.is_player_one_turn = self.is_player_one_turn ^ !self.has_additional_turn;
         self.has_additional_turn = !self.has_additional_turn;
@@ -143,6 +147,11 @@ impl State {
     pub fn unplay(&mut self, tile: Coord) {
         self.player_one.remove(&tile);
         self.player_two.remove(&tile);
+        self.evaluations.pop();
+    }
+
+    pub fn eval(&self) -> i32{
+        return *self.evaluations.last().unwrap();
     }
 
     pub fn play(&mut self, tile: Coord) -> Option<()> {
@@ -166,7 +175,7 @@ impl Default for State {
             is_player_one_turn: true,
             has_additional_turn: false,
             win_status: None,
-            evaluation: 0,
+            evaluations: vec![0],
         }
     }
 }
