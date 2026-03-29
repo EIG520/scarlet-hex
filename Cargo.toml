@@ -7,6 +7,12 @@ edition = "2024"
 name = "play"
 path = "src/play.rs"
 
+[[bin]]
+name = "test"
+path = "src/test.rs"
+
+[profile.release]
+debug = true
+
 [dependencies]
 itertools = "0.14.0"
-utils = "0.0.3"

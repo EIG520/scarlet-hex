@@ -3,12 +3,6 @@
 version = 4
 
 [[package]]
-name = "commandext"
-version = "0.1.0"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "931dd7114e3495c5d7346fd85cdb212c219f4ba2e307458df223b1e1e967e306"
-
-[[package]]
 name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -28,14 +22,4 @@ name = "scarlet-hex"
 version = "0.1.0"
 dependencies = [
  "itertools",
- "utils",
-]
-
-[[package]]
-name = "utils"
-version = "0.0.3"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "7d3342045b8ce979cde9bf4d920434b5113ec753ec0215c1ebe2edebb368651a"
-dependencies = [
- "commandext",
 ]
