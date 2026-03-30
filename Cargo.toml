@@ -11,6 +11,10 @@ path = "src/play.rs"
 name = "test"
 path = "src/test.rs"
 
+[[bin]]
+name = "bench"
+path = "src/bench.rs"
+
 [profile.release]
 debug = true
 
