@@ -2,6 +2,8 @@ use std::{collections::HashSet, hash::Hash};
 
 use itertools::Itertools;
 
+use crate::hexo::cset::CoordSet;
+
 pub type Coord =  (i16, i16);
 
 #[derive(Clone, Copy, Debug)]
@@ -14,8 +16,8 @@ const UNITS_POS: [Coord; 3] = [(1,0), (1,-1), (0,1)];
 
 #[derive(Clone)]
 pub struct State {
-    player_one: HashSet<Coord>,
-    player_two: HashSet<Coord>,
+    player_one: CoordSet,
+    player_two: CoordSet,
 
     pub is_player_one_turn: bool,
     has_additional_turn: bool,
@@ -27,7 +29,7 @@ pub struct State {
 
 impl State {
     pub fn is_open(&self, tile: Coord) -> bool {
-        return !self.player_one.contains(&tile) && !self.player_two.contains(&tile);
+        return !self.player_one.contains(tile) && !self.player_two.contains(tile);
     }
 
     pub fn play_unchecked(&mut self, tile: Coord) {
@@ -60,13 +62,13 @@ impl State {
             // Check for winning
             let mut count: i32 = -1;
             let mut temp_coord = tile;
-            while plrmap.contains(&temp_coord) {
+            while plrmap.contains(temp_coord) {
                 count += 1;
                 temp_coord.0 += x;
                 temp_coord.1 += y;
             }
             temp_coord = tile;
-            while plrmap.contains(&temp_coord) {
+            while plrmap.contains(temp_coord) {
                 count += 1;
                 temp_coord.0 -= x;
                 temp_coord.1 -= y;
@@ -93,19 +95,19 @@ impl State {
         self.has_additional_turn = !self.has_additional_turn;
     }
 
-    pub fn winnable(&self, nplrmap:&HashSet<Coord>, plrmap:&HashSet<Coord>,tile: Coord, x: i16, y: i16) -> bool {
+    pub fn winnable(&self, nplrmap:&CoordSet, plrmap:&CoordSet,tile: Coord, x: i16, y: i16) -> bool {
         let mut count: i32 = -1;
         let mut ncount: i32 = -2;
         let mut temp_coord = tile;
-        while !nplrmap.contains(&temp_coord) && count < 6 {
-            if plrmap.contains(&temp_coord) { ncount += 1; }
+        while !nplrmap.contains(temp_coord) && count < 6 {
+            if plrmap.contains(temp_coord) { ncount += 1; }
             count += 1;
             temp_coord.0 += x;
             temp_coord.1 += y;
         }
         temp_coord = tile;
-        while !nplrmap.contains(&temp_coord) && count < 12 {
-            if plrmap.contains(&temp_coord) { ncount += 1; }
+        while !nplrmap.contains(temp_coord) && count < 12 {
+            if plrmap.contains(temp_coord) { ncount += 1; }
             count += 1;
             temp_coord.0 -= x;
             temp_coord.1 -= y;
@@ -114,19 +116,19 @@ impl State {
         return count >= 6 && ncount > 0;
     }
 
-    pub fn winnablecnt(&self, nplrmap:&HashSet<Coord>, plrmap:&HashSet<Coord>,tile: Coord, x: i16, y: i16) -> i32 {
+    pub fn winnablecnt(&self, nplrmap:&CoordSet, plrmap:&CoordSet,tile: Coord, x: i16, y: i16) -> i32 {
         let mut count: i32 = -1;
         let mut ncount: i32 = -2;
         let mut temp_coord = tile;
-        while !nplrmap.contains(&temp_coord) && count < 6 {
-            if plrmap.contains(&temp_coord) { ncount += 1; }
+        while !nplrmap.contains(temp_coord) && count < 6 {
+            if plrmap.contains(temp_coord) { ncount += 1; }
             count += 1;
             temp_coord.0 += x;
             temp_coord.1 += y;
         }
         temp_coord = tile;
-        while !nplrmap.contains(&temp_coord) && count < 12 {
-            if plrmap.contains(&temp_coord) { ncount += 1; }
+        while !nplrmap.contains(temp_coord) && count < 12 {
+            if plrmap.contains(temp_coord) { ncount += 1; }
             count += 1;
             temp_coord.0 -= x;
             temp_coord.1 -= y;
@@ -151,23 +153,23 @@ impl State {
 
         let mut count: i32 = -1;
         let mut temp_coord = tile;
-        while !nplrmap.contains(&temp_coord) && count < 3 {
+        while !nplrmap.contains(temp_coord) && count < 3 {
             count += 1;
             temp_coord.0 += x;
             temp_coord.1 += y;
         }
 
-        if nplrmap.contains(&temp_coord) {
+        if nplrmap.contains(temp_coord) {
             blkcnt += self.winnablecnt(plrmap, nplrmap, temp_coord, x, y);
         }
 
         temp_coord = tile;
-        while !nplrmap.contains(&temp_coord) && count < 6 {
+        while !nplrmap.contains(temp_coord) && count < 6 {
             count += 1;
             temp_coord.0 -= x;
             temp_coord.1 -= y;
         }
-        if nplrmap.contains(&temp_coord) {
+        if nplrmap.contains(temp_coord) {
             blkcnt += self.winnablecnt(plrmap, nplrmap, temp_coord, x, y);
         }
 
@@ -177,8 +179,8 @@ impl State {
     pub fn unplay(&mut self) {
 
         let tile = self.turns.pop().unwrap();
-        self.player_one.remove(&tile);
-        self.player_two.remove(&tile);
+        self.player_one.remove(tile);
+        self.player_two.remove(tile);
         self.evaluations.pop();
 
         self.has_additional_turn = !self.has_additional_turn;
@@ -223,8 +225,8 @@ impl State {
 impl Default for State {
     fn default() -> Self {
         Self {
-            player_one: HashSet::new(),
-            player_two: HashSet::new(),
+            player_one: CoordSet::new(),
+            player_two: CoordSet::new(),
             is_player_one_turn: true,
             has_additional_turn: false,
             win_status: None,

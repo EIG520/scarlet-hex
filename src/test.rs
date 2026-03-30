@@ -35,7 +35,7 @@ pub fn main() {
 
     loop {
         searcher = Searcher::new(state.clone(), lastmove);
-        lastmove = searcher.go(10000);
+        lastmove = searcher.go(100000);
         state.play(lastmove);
         println!("{:?}", lastmove);
         match state.get_winner() {
@@ -46,7 +46,7 @@ pub fn main() {
 
         
         searcher = Searcher::new(state.clone(), lastmove);
-        lastmove = searcher.go(10000);
+        lastmove = searcher.go(100000);
         state.play(lastmove);
         println!("{:?}", lastmove);
         match state.get_winner() {
