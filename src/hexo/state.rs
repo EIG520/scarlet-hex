@@ -147,6 +147,8 @@ impl State {
 
     pub fn unplay(&mut self) {
 
+        // println!("{:?}", self.turns);
+
         let tile = self.turns.pop().unwrap();
         self.player_one.remove(tile);
         self.player_two.remove(tile);
@@ -178,7 +180,7 @@ impl State {
     }
 
     pub fn get_focused_tiles(&self) -> Vec<Coord> {
-        let mut tiles = HashSet::<Coord>::new();
+        let mut tiles = CoordSet::new();
         for tile in if self.turns.len() >= 5 {&self.turns[self.turns.len()-5..]} else {&self.turns} {
             for (x,y) in (-2..=2).cartesian_product(-2..=2) {
                 if self.is_open((tile.0 + x, tile.1 + y)) {
@@ -186,8 +188,7 @@ impl State {
                 }
             }
         }
-
-        tiles.iter().map(|&c| c).collect()
+        tiles.get_ones()
     }
 }
 

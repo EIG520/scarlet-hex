@@ -154,6 +154,25 @@ impl CoordSet {
         return Self::get_0_run(!self.data2[(nc.1 + nc.0 - 31) as usize], nc.1 as u32);
     }
 
+    pub fn get_ones(&self) -> Vec<Coord> {
+        let mut cvec = vec![];
+        for (idx, &v) in self.data.iter().enumerate() {
+            let mut t = v;
+
+            while t > 0 {
+                let pos = t.trailing_zeros();
+
+                cvec.push((idx as i16 - 31, pos as i16 - 31));
+
+                t = t & (t-1);
+            }
+        }
+
+        // println!("{cvec:?}");
+
+        cvec
+    }
+
     pub fn new() -> CoordSet {
         CoordSet { data: [0; 64], data1: [0; 64], data2: [0; 64] }
     }
