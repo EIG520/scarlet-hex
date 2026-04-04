@@ -1,4 +1,4 @@
-use std::{collections::HashSet, hash::Hash};
+use std::collections::HashSet;
 
 use itertools::Itertools;
 
@@ -56,38 +56,22 @@ impl State {
         let nplrmap = match self.is_player_one_turn {
             false => &self.player_one,
             true => &self.player_two,
-        }; 
+        };
 
-        for (x,y) in UNITS_POS {
-            // Check for winning
-            let mut count: i32 = -1;
-            let mut temp_coord = tile;
-            while plrmap.contains(temp_coord) {
-                count += 1;
-                temp_coord.0 += x;
-                temp_coord.1 += y;
-            }
-            temp_coord = tile;
-            while plrmap.contains(temp_coord) {
-                count += 1;
-                temp_coord.0 -= x;
-                temp_coord.1 -= y;
-            }
-
-            if count >= 6 {
-                match self.is_player_one_turn {
-                    true => {self.win_status = Some(Player::Plr1); eval = 9999},
-                    false => {self.win_status = Some(Player::Plr2); eval = 9999}
-                }
-            }
-            // my EVIL, rEVULsive EVAL is on another lEVEL as it EVOLves differently based on the order moves are played
-            // Update position evaluation
+        // Check for winning
+        if plrmap.get_1_run_0(tile) >= 6 || plrmap.get_1_run_1(tile) >= 6 || plrmap.get_1_run_2(tile) >= 6  {
             match self.is_player_one_turn {
-                true => eval += self.winnablecnt(nplrmap, plrmap, tile, x, y),
-                false => eval -= self.winnablecnt(nplrmap, plrmap, tile, x, y)
+                true => {self.win_status = Some(Player::Plr1); eval = 9999},
+                false => {self.win_status = Some(Player::Plr2); eval = 9999}
             }
         }
 
+        // my EVIL, rEVULsive EVAL is on another lEVEL as it EVOLves differently based on the order moves are played
+        // Update position evaluation
+        match self.is_player_one_turn {
+            true => eval += self.winnablecnt(nplrmap, plrmap, tile) as i32,
+            false => eval -= self.winnablecnt(nplrmap, plrmap, tile) as i32
+        }
 
         self.evaluations.push(eval);
 
@@ -95,49 +79,34 @@ impl State {
         self.has_additional_turn = !self.has_additional_turn;
     }
 
-    pub fn winnable(&self, nplrmap:&CoordSet, plrmap:&CoordSet,tile: Coord, x: i16, y: i16) -> bool {
-        let mut count: i32 = -1;
-        let mut ncount: i32 = -2;
-        let mut temp_coord = tile;
-        while !nplrmap.contains(temp_coord) && count < 6 {
-            if plrmap.contains(temp_coord) { ncount += 1; }
-            count += 1;
-            temp_coord.0 += x;
-            temp_coord.1 += y;
-        }
-        temp_coord = tile;
-        while !nplrmap.contains(temp_coord) && count < 12 {
-            if plrmap.contains(temp_coord) { ncount += 1; }
-            count += 1;
-            temp_coord.0 -= x;
-            temp_coord.1 -= y;
-        }
-
-        return count >= 6 && ncount > 0;
-    }
-
-    pub fn winnablecnt(&self, nplrmap:&CoordSet, plrmap:&CoordSet,tile: Coord, x: i16, y: i16) -> i32 {
-        let mut count: i32 = -1;
-        let mut ncount: i32 = -2;
-        let mut temp_coord = tile;
-        while !nplrmap.contains(temp_coord) && count < 6 {
-            if plrmap.contains(temp_coord) { ncount += 1; }
-            count += 1;
-            temp_coord.0 += x;
-            temp_coord.1 += y;
-        }
-        temp_coord = tile;
-        while !nplrmap.contains(temp_coord) && count < 12 {
-            if plrmap.contains(temp_coord) { ncount += 1; }
-            count += 1;
-            temp_coord.0 -= x;
-            temp_coord.1 -= y;
-        }
+    pub fn winnablecnt(&self, nplrmap:&CoordSet, plrmap:&CoordSet,tile: Coord) -> u32 {
+        let mut score = 0;
+        
+        let count = nplrmap.get_0_run_0(tile);
+        let ncount = plrmap.count_1_0r(tile, nplrmap.get_0_run_0r(tile))
+            + plrmap.count_1_0l(tile, nplrmap.get_0_run_0l(tile));
 
         if count >= 6 {
-            return ncount;
+            score += ncount;
         }
-        return 0;
+
+        let count = nplrmap.get_0_run_1(tile);
+        let ncount = plrmap.count_1_1r(tile, nplrmap.get_0_run_1r(tile))
+            + plrmap.count_1_1l(tile, nplrmap.get_0_run_1l(tile));
+
+        if count >= 6 {
+            score += ncount;
+        }
+
+        let count = nplrmap.get_0_run_2(tile);
+        let ncount = plrmap.count_1_2r(tile, nplrmap.get_0_run_2r(tile))
+            + plrmap.count_1_2l(tile, nplrmap.get_0_run_2l(tile));
+
+        if count >= 6 {
+            score += ncount;
+        }
+
+        return score;
     }
     pub fn blocks(&self, tile: Coord, x: i16, y: i16) -> i32 {
         let plrmap = match self.is_player_one_turn {
@@ -160,7 +129,7 @@ impl State {
         }
 
         if nplrmap.contains(temp_coord) {
-            blkcnt += self.winnablecnt(plrmap, nplrmap, temp_coord, x, y);
+            blkcnt += self.winnablecnt(plrmap, nplrmap, temp_coord);
         }
 
         temp_coord = tile;
@@ -170,10 +139,10 @@ impl State {
             temp_coord.1 -= y;
         }
         if nplrmap.contains(temp_coord) {
-            blkcnt += self.winnablecnt(plrmap, nplrmap, temp_coord, x, y);
+            blkcnt += self.winnablecnt(plrmap, nplrmap, temp_coord);
         }
 
-        return blkcnt;
+        return blkcnt as i32;
     }
 
     pub fn unplay(&mut self) {
